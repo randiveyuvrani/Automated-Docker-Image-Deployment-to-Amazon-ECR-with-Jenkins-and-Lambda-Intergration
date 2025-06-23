@@ -2,32 +2,38 @@ pipeline {
     agent any
 
     environment {
-        IMAGE_NAME = "flask-app"
-        BUILD_TAG = "${BUILD_NUMBER}"  // Jenkins build number
+        IMAGE_NAME = 'flask-app'
+        CONTAINER_NAME = 'flask-app'
     }
 
     stages {
-        stage('Clone Repository') {
+        stage('Checkout Code') {
             steps {
-                git 'https://github.com/randiveyuvrani/Automated-Docker-Image-Deployment-to-Amazon-ECR-with-Jenkins-and-Lambda-Intergration.git'
+                git branch: 'main', url: 'https://github.com/randiveyuvrani/Automated-Docker-Image-Deployment-to-Amazon-ECR-with-Jenkins-and-Lambda-Intergration.git'
             }
         }
 
         stage('Build Docker Image') {
             steps {
                 script {
-                    sh "docker build -t ${IMAGE_NAME}:${BUILD_TAG} ."
+                    sh 'docker build -t $IMAGE_NAME .'
                 }
             }
         }
 
-        stage('Run Docker Container (Optional)') {
-            when {
-                expression { return false } // ✅ Prevent running a new container
-            }
+        stage('Stop and Remove Old Container') {
             steps {
                 script {
-                    sh "docker run -d -p 8001:5000 --name ${IMAGE_NAME}_${BUILD_TAG} ${IMAGE_NAME}:${BUILD_TAG}"
+                    sh 'docker stop $CONTAINER_NAME || true'
+                    sh 'docker rm $CONTAINER_NAME || true'
+                }
+            }
+        }
+
+        stage('Run Container on Port 8000') {
+            steps {
+                script {
+                    sh 'docker run -d -p 8000:5000 --name $CONTAINER_NAME $IMAGE_NAME'
                 }
             }
         }
